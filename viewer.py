@@ -68,8 +68,6 @@ def close_db(exception):
 
 
 def do_query(cursor, query, *params):
-    print(query)
-    print(params)
     cursor.execute(query, params)
     return [tuple(r) for r in cursor.fetchall()]
 
@@ -387,7 +385,7 @@ def match_persona(c, name):
     sname = normalize(name)
 
     #rows = do_query(c, 'SELECT p2.id, p2.name, p1.person_id, p2.official FROM personae AS p1 JOIN personae AS p2 ON p1.person_id = p2.person_id  WHERE p1.search_name LIKE %s AND p1.official = 1 ORDER BY p1.person_id, p2.official DESC, p2.name', '%{}%'.format(sname))
-    rows = do_query(c,'SELECT p2.id, p2.name, p1.person_id, p2.official FROM personae AS p1 JOIN personae AS p2 ON p1.person_id = p2.person_id  WHERE p1.search_name LIKE %s  ORDER BY p1.person_id, p2.official DESC, p2.name', '%{}%'.format(sname))
+    rows = do_query(c,'SELECT p2.id, p2.name, p1.person_id, p2.official FROM personae AS p1 JOIN personae AS p2 ON p1.person_id = p2.person_id  WHERE p1.search_name LIKE %s ORDER BY p1.person_id, p2.official DESC, p2.name', '%{}%'.format(sname))
 
     results = [[i[1] for i in gi] for _, gi in itertools.groupby(rows, lambda r: r[2])]
     # sort name groups by their header name
@@ -397,27 +395,25 @@ def match_persona(c, name):
 
 def db_search_persona(cursor, name):
     if(name.isnumeric()):
-        print("name is numeric")
-        return do_query(cursor,"""select distinct p_full.id, p_full.name, p_full.person_id,substring(alt_names,1,length(alt_names)-1) as  alt_names 
-from personae p 
-	left join (select p1.person_id, p1.id,  group_concat(p2.name, ',') as alt_names, p1.name
-			from personae as p1
-					left join personae as p2 on p1.person_id = p2.person_id and p2.official = 0
-			where  p1.official =1 
-			group by p1.id 	) as p_full
-			on p.person_id = p_full.person_id
-WHERE id =%s order by p_full.name""", name)
+        return do_query(cursor,"""SELECT DISTINCT p_full.id, p_full.name, p_full.person_id, substring(alt_names, 1, length(alt_names) - 1) AS alt_names
+FROM personae p
+	LEFT JOIN (SELECT p1.person_id, p1.id, group_concat(p2.name, ',') AS alt_names, p1.name
+			FROM personae AS p1
+					LEFT JOIN personae AS p2 ON p1.person_id = p2.person_id AND p2.official = 0
+			WHERE p1.official = 1
+			GROUP BY p1.id) AS p_full
+			ON p.person_id = p_full.person_id
+WHERE p.id =%s ORDER BY p_full.name""", name)
     else:
-        print("regular name")
-        return do_query(cursor,"""select distinct p_full.id, p_full.name, p_full.person_id, substring(alt_names,1,length(alt_names)-1) as alt_names 
-from personae p 
-	left join (select p1.person_id, p1.id,  group_concat(p2.name, ',') as alt_names, p1.name
-			from personae as p1
-					left join personae as p2 on p1.person_id = p2.person_id and p2.official = 0
-			where  p1.official =1 
-			group by p1.id 	) as p_full
-			on p.person_id = p_full.person_id
-WHERE p.name like %s  or p.search_name like %s order by p_full.name""", '%{}%'.format(name), '%{}%'.format(name))
+        return do_query(cursor,"""SELECT DISTINCT p_full.id, p_full.name, p_full.person_id, substring(alt_names, 1, length(alt_names) - 1) AS alt_names
+FROM personae p
+	LEFT JOIN (SELECT p1.person_id, p1.id, group_concat(p2.name, ',') AS alt_names, p1.name
+			FROM personae AS p1
+					LEFT JOIN personae AS p2 ON p1.person_id = p2.person_id AND p2.official = 0
+			WHERE p1.official = 1
+			GROUP BY p1.id) AS p_full
+			ON p.person_id = p_full.person_id
+WHERE p.name LIKE %s OR p.search_name LIKE %s ORDER BY p_full.name""", '%{}%'.format(name), '%{}%'.format(name))
 
 def search_persona(c, persona):
     #matches = match_persona(c, persona)
@@ -476,14 +472,12 @@ def search():
         end = stripped(request.form, 'end')
         crown = stripped(request.form, 'crown')
         award = stripped(request.form, 'award')
-        print("search")
 
         try:
             if forename or surname:
                 throw_if(persona, begin, end, crown, award)
                 return search_modern(get_db().cursor(), surname, forename)
             elif persona:
-                print("go search for persona")
                 throw_if(forename, surname, begin, end, crown, award)
                 return search_persona(get_db().cursor(), persona)
             elif begin or end:
@@ -528,20 +522,22 @@ def recommend():
 
  
   try:
-    award_types = do_query(c, "select id, category from award_categories")
+    award_types = do_query(c, "SELECT id, category FROM award_categories")
     data['award_types']=award_types
-    branches = do_query(c, 'select distinct id,name from groups where accept_recommendations = 1')
+    branches = do_query(c, 'SELECT DISTINCT id, name FROM groups WHERE accept_recommendations = 1')
     data['branches'] = branches
     if request.method == 'POST':
         state = request.form.get('state', default=0, type=int)
 
         if state == 0 or state == 6:
            # first page of the form. Check if the person recommended already exists in the database
-            persona_search = normalize(stripped(request.form, 'persona'))
+            persona_search = normalize(stripped(request.form, 'persona_search'))
+            origin = normalize(stripped(request.form, 'origin'))
             c = get_db().cursor()
-            if state == 6:
+            data['origin'] = origin
+            if origin=="persona":
                 data['direct']=True
-                persona_search = normalize(stripped(request.form, 'persona'))
+                #persona_search = normalize(stripped(request.form, 'persona_search'))
 
             rst=db_search_persona(c,persona_search)
             data['matches'] = rst
@@ -554,14 +550,11 @@ def recommend():
             data['persona_id'] = persona_id = request.form.get('persona', type=int)
             data['award_types'] = request.form.getlist('type')
             data['branch'] = request.form.getlist('branch')            
-            print(data['branch'])
             if '2' in data['branch']:
-                    print("Adding SCA awards")
                     addSCA = data['branch']
                     addSCA.append('1')  #add SCA level awards if Drachenwald is selected
                     data['branch'] = addSCA
                     
-            print(data['branch'])
             if persona_id is None:
                 data['persona'] = stripped(request.form, 'unknown')
                 data['awards'] = []
@@ -571,8 +564,7 @@ def recommend():
             else:
                 data['persona'] = do_query(c, 'SELECT name FROM personae WHERE id =  %s', persona_id)[0][0]
                 data['awards'] = do_query(c, 'SELECT award_types.name, awards.date, award_types.precedence FROM personae AS p1 JOIN personae AS p2 ON p1.person_id = p2.person_id JOIN awards ON p2.id = awards.persona_id JOIN award_types ON awards.type_id = award_types.id  WHERE p1.id = %s ORDER BY awards.date, award_types.name', persona_id)
-            print("persona_id: %s" %persona_id)
-            unawards_query = '''SELECT award_types.id, award_types.name, CASE award_types.group_id WHEN 1 THEN 2 ELSE award_types.group_id END AS group_id, award_types.precedence,tooltip  
+            unawards_query = '''SELECT award_types.id, award_types.name, CASE award_types.group_id WHEN 1 THEN 2 ELSE award_types.group_id END AS group_id, award_types.precedence, tooltip
                                 FROM award_types 
                                     LEFT JOIN (SELECT award_types.id 
                                                FROM personae AS p1 
@@ -581,9 +573,9 @@ def recommend():
                                                     JOIN award_types ON awards.type_id = award_types.id WHERE p1.id = %s) AS a ON award_types.id = a.id 
                                 WHERE (award_types.group_id IN (%s) 
                                       AND (award_types.open = 1 OR award_types.open IS NULL) 
-                                      and recommendable = 1
-                                      and award_types.category_id in ("%s") or (award_types.id = 1))  
-                                      AND (a.id IS NULL  or repeatable = 1) -- don't recommend awards that the person already have unless they can be handed out multiple times
+                                      AND recommendable = 1
+                                      AND award_types.category_id in ("%s") OR (award_types.id = 1))
+                                      AND (a.id IS NULL OR repeatable = 1) -- don't recommend awards that the person already have unless they can be handed out multiple times
                         		ORDER BY group_id, award_types.precedence, award_types.name''' % (persona_id, ','.join(data['branch']), '","'.join(data['award_types']))
 
             data['unawards'] = do_query(c, unawards_query)
@@ -592,7 +584,6 @@ def recommend():
                 }
             
             data['in_op'] = persona_id == -1
-            #print(data['unawards'])
 
             # removes the awards of similar level if already received
             #if 2 in data['unawards']:
@@ -602,7 +593,7 @@ def recommend():
             #    has_goa = any(a[2] == 500 for a in data['awards'])
             #    data['unawards'][2] = [u for u in data['unawards'][2] if (not has_aoa or u[0] != 1) and (not has_goa or u[0] != 11)]
 
-            crowns = dict(do_query(c, 'SELECT id, name FROM groups WHERE id != 1 and id in (%s)' % ','.join(data['branch'])))
+            crowns = dict(do_query(c, 'SELECT id, name FROM groups WHERE id != 1 AND id IN (%s)' % ','.join(data['branch'])))
             data['sendto']=crowns
 
             state = 2
@@ -651,7 +642,8 @@ def recommend():
                 'recommendation': recommendation,
                 'events': events,
                 'scribe': scribe,
-                'scribe_email': scribe_email
+                'scribe_email': scribe_email,
+                'awards_form':awards
             }
 
             your_email = stripped(request.form, 'your_email')
@@ -668,7 +660,7 @@ def recommend():
                 'time_served': stripped(request.form, 'time_served'),
                 'gender': stripped(request.form, 'gender'),
                 'branch': stripped(request.form, 'branch'),
-                'award_names': ', '.join(request.form.getlist('award_names[]')),
+                'award_names': ', '.join(award_names),
                 'recommendation': rec,
                 'recommendation_sanitized': rec_sanitized,
                 'events': stripped(request.form, 'events'),
@@ -743,11 +735,10 @@ Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Ad
              
             service = build('gmail', 'v1', credentials=credentials.with_subject('recommendations@drachenwald.sca.org'))
             message = EmailMessage()
-            print(message) 
             message.set_content(body)
             #TODO: restore this to original
-            #message['To'] = to
-            message['To'] = [your_email]
+            message['To'] = to
+            #message['To'] = [your_email]
             message['Cc'] = [your_email]
             message['From']= cred_info["client_email"]
             message['Subject'] = 'Recommendation'
