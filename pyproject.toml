@@ -1,0 +1,15 @@
+[project]
+name = "viewer"
+dependencies = [
+    "flask",
+    "google-api-python-client",
+    "google-auth-httplib2",
+    "google-auth-oauthlib",
+    "mysql-connector-python"
+]
+description = "Drachenwald Order of Precedence"
+version = "0.1.0"
+
+[build-system]
+requires = ["flit_core<4"]
+build-backend = "flit_core.buildapi"

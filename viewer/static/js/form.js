@@ -1,4 +1,4 @@
-var form = document.getElementsByTagName('form')[0];
+var form = document.querySelector('form');
 
 var reset = document.getElementById('reset');
 
@@ -31,12 +31,7 @@ function setDisabled(value, ins) {
   ins.forEach(x => {
     x.disabled = value;
     x.labels.forEach(l => {
-      if (value) {
-        l.classList.add("disabled");
-      }
-      else {
-        l.classList.remove("disabled");
-      }
+      l.classList.toggle("disabled", value);
     });
   });
 }
