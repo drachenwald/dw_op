@@ -360,17 +360,17 @@ class FormError(Exception):
 
 
 def search_modern(c, surname, forename):
-    query = 'SELECT id, surname, forename FROM people WHERE '
+    query = 'SELECT id, surname, forename FROM people WHERE consent in ("seperate pages", "same page")'
 
     if surname:
         if forename:
-            query += 'surname LIKE %s AND forename LIKE %s'
+            query += 'and surname LIKE %s AND forename LIKE %s'
             params = ('%{}%'.format(surname), '%{}%'.format(forename))
         else:
-            query += 'surname LIKE %s'
+            query += 'and surname LIKE %s'
             params = ('%{}%'.format(surname),)
     else:
-        query += 'forename LIKE %s'
+        query += 'and forename LIKE %s'
         params = ('%{}%'.format(forename),)
 
     query += ' ORDER BY surname, forename'
