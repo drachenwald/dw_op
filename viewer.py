@@ -119,14 +119,16 @@ def persona(name):
 		people.blazon, 
 		people.emblazon,
 		if(display_pronouns, pronouns, "") as pronouns,
-		if(display_title, title, "") as title  
+		if(display_title, title, "") as title,
+		if(consent = "Same page", concat(people.forename , " " , people.surname), "")  as mod_name,
+		consent = "Same page" as show_mod
 	FROM personae 
 		JOIN people ON personae.person_id = people.id 
 		JOIN regions ON people.region_id = regions.id 
 		LEFT JOIN titles on personae.id = titles.persona_id
 					and titles.main = True
 	WHERE personae.name = %s"""
-    person_id, has_modname, region, blazon, emblazon, pronouns, title = do_query(c, q, uname)[0]
+    person_id, has_modname, region, blazon, emblazon, pronouns, title, mod_name, show_mod = do_query(c, q, uname)[0]
 
     official_id, official_name = do_query(c, 'SELECT id, name FROM personae WHERE person_id = %s AND official = 1', person_id)[0];
 
@@ -134,9 +136,9 @@ def persona(name):
     if other:
         other = [f[0] for f in other]
 
-    alt_titles = do_query(c, "select alt from alts where person_id = %s", person_id)
-    if alt_titles:
-        alt_titles = [f[0] for f in alt_titles]	
+    #alt_titles = do_query(c, "select alt from alts where person_id = %s", person_id)
+    #if alt_titles:
+    #    alt_titles = [f[0] for f in alt_titles]	
 
     alt_titles = do_query(c, "select title from titles where persona_id = %s and COALESCE(main,0) !=1 and coalesce(display_title,0) order by id asc", official_id)
     if alt_titles:
@@ -164,7 +166,9 @@ def persona(name):
         highest=highest,
 	pronouns=pronouns,
         title=title,
-	alt_titles=alt_titles
+	alt_titles=alt_titles,
+	mod_name=mod_name,
+	show_mod=show_mod
     )
 
 
