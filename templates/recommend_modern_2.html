@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Award Recommendation{% endblock %}
+{% block content %}
+<div id="content">
+
+  <form id="recform" method="post">
+    <input type="hidden" name="state" value="2"/>
+    <input type="hidden" name="person_id" value="{{data['person_id']}}"/>
+    <input type="hidden" name="person" value="{{data['person']}}"/>
+
+    <h2>{{data['persona']}}</h2>
+
+    {% if data['awards'] %}
+    <strong>possessed already of these awards</strong>
+
+    <div class="my-3">
+      <ul class="list-group col-12 col-md-8 col-lg-6" id="awardlist">
+        {% for i in data['awards'] %}
+          <li class="list-group-item d-flex justify-content-between align-items-start">
+            <span>{{i[0]}}</span>
+            <span class="text-muted">{{i[1]}}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% elif not data['in_op'] %}
+
+    <p>This person is not already in the Order of Precedence.</p>
+
+    <div class="mb-3 col-12 col-md-8 col-lg-6">
+      <label for="time_served"><strong>How long has this person been in the society?</strong></label>
+      <input id="time_served" name="time_served" type="text" class="form-control">
+    </div>
+
+    <div class="mb-3 col-12 col-md-8 col-lg-6">
+      <label for="gender"><strong>Gender</strong></label>
+      <select id="gender" name="gender" class="form-select">
+        <option value=""></option>
+        <option value="female">female</option>
+        <option value="male">male</option>
+        <option value="other">other</option>
+      </select>
+    </div>
+
+    <div class="mb-3 col-12 col-md-8 col-lg-6">
+      <label for="branch"><strong>Home shire, group, or region</strong></label>
+      <input id="branch" name="branch" type="text" class="form-control">
+    </div>
+
+    {% endif %}
+
+    <div class="my-3"><strong>For which awards do you recommend this person?</strong></div>
+    <ul class="list-group col-12 col-md-8 col-lg-6">
+      {% for g, gi in data['unawards'].items() %}
+        <li class="list-group-item list-group-item-primary text-bg-primary">
+          <strong>{{data['sendto'][g]}}</strong>
+        </li>
+
+        {% for i in gi %}
+          <label class="form-check-label" for="award_{{i[0]}}">
+            <li class="list-group-item" {% if i[4] != None %}data-bs-toggle="tooltip" data-bs-title="{{i[4]}}"{% endif %}>
+              <input class="form-check-input me-1" id="award_{{i[0]}}" name="awards[]" value="{{i[0]}}" type="checkbox">
+              {{i[1]}}{% if i[4] != None %}<sup><span class="material-icons">info</span></sup>{% endif %}
+            </li>
+          </label>
+        {% endfor %}
+
+      {% endfor %}
+    </ul>
+
+    <div class="my-3"><strong>Why?</strong></div>
+    <textarea class="form-control" id="recommendation" name="recommendation"  style="height: 100px" placeholder="Why do they deserve this award? More information makes it easier for royals to grant awards" required></textarea>
+
+    <div class="my-3"><strong>Which Crown/Coronet/Baronials should receive your recommendation?</strong></div>
+
+    <ul class="list-group col-12 col-md-8 col-lg-6">
+      {% for k, v in data['sendto'].items() %}
+        <label class="form-check-label" for="crown_{{k}}">
+          <li class="list-group-item">
+            <input class="form-check-input me-1" id="crown_{{k}}" name="crowns[]" value="{{k}}" type="checkbox">
+            {{ v }}
+          </li>
+        </label>
+      {% endfor %}
+
+    </ul>
+
+    <div class="my-3"><strong>Which events might the recommendee attend?</strong></div>
+    <textarea class="form-control" id="events" name="events" style="height: 100px" placeholder="E.g., Michaelmas, Twelfth Night" required></textarea>
+
+    <div class="my-3"><strong>Who, if anyone, do you suggest as a scribe?</strong></div>
+
+    <div>
+      <label for="scribe">
+        <div class="input-group mb-3 col-12 col-md-8 col-lg-6">
+          <span class="input-group-text">Name</span>
+          <input class="form-control" id="scribe" name="scribe" type="text" autocomplete="off" >
+        </div>
+      </label>
+    </div>
+
+    <div>
+      <label for="scribe_email">
+        <div class="input-group mb-3">
+          <span class="input-group-text">Email</span>
+          <input class="form-control" id="scribe_email" name="scribe_email" type="email" autocomplete="off">
+        </div>
+      </label>
+    </div>
+
+    <div class="my-3"><strong>Who are you?</strong></div>
+
+    <div class="input-group mb-3">
+      <span class="input-group-text">First<span class="d-none d-sm-inline">&nbsp;name</span></span>
+      <input class="form-control" name="your_forename" type="text" required>
+      <span class="input-group-text">Last<span class="d-none d-sm-inline">&nbsp;name</span></span>
+      <input class="form-control" name="your_surname" type="text" required>
+    </div>
+
+    <div class="input-group mb-3">
+      <span class="input-group-text">SCA name</span>
+      <input class="form-control" name="your_persona" type="text" required>
+    </div>
+
+    <div class="input-group mb-3">
+      <span class="input-group-text">Your email</span>
+      <input class="form-control" name="your_email" type="email" required>
+    </div>
+
+    <div class="text-center w-100 my-4">
+      <div class="d-grid gap-2 col-10 col-sm-8 col-md-6 col-lg-4 mx-auto mb-5">
+        <button class="btn btn-primary mb-4" id="submit" type="submit" value="Submit">Send recommendation</button>
+        <button class="btn btn-secondary mb-4" id="reset" type="reset" value="Reset">Reset form</button>
+      </div>
+    </div>
+
+
+  </form>
+</div>
+
+<script src="{{ url_for('static', filename='js/rec.js') }}"></script>
+
+<script>
+var a = [
+{%- for g, gi in data['unawards'].items() %}
+  {% for i in gi %}
+  [
+    document.getElementById('award_{{i[0]}}'),
+    document.getElementById('crown_{{i[2]}}')
+  ],
+  {% endfor %}
+{% endfor -%}
+];
+
+var c2a = {};
+for (let x of a) {
+  if (!(x[1].id in c2a)) {
+    c2a[x[1].id] = [];
+  }
+  c2a[x[1].id].push(x[0]);
+
+  x[0].addEventListener("change", function(event) {
+    if (x[0].checked) {
+      x[1].checked = x[1].disabled = true;
+    }
+    else {
+      x[1].checked = x[1].disabled = c2a[x[1].id].reduce((v, y) => v || y.checked, false);
+    }
+  });
+}
+
+var c = [...new Set(a.map(x => x[1]))];
+
+c.forEach(x => x.addEventListener("change", function(event) {
+  if (x.checked) {
+    c.forEach(y => y.setCustomValidity(""));
+  }
+}));
+
+var submit = document.getElementById("submit");
+
+submit.addEventListener("click", function(event) {
+  var some_crown_is_checked = c.some(x => x.checked);
+  if (!some_crown_is_checked) {
+    c.forEach(x => x.setCustomValidity("Must check at least one crown!"));
+  }
+});
+
+var form = document.getElementsByTagName('form')[0];
+
+form.addEventListener("reset", function(event) {
+  c.forEach(x => x.disabled = false);
+  c.forEach(x => x.setCustomValidity(""));
+}, false);
+
+form.addEventListener("submit", function(event) {
+  c.forEach(x => x.disabled = false);
+}, false);
+</script>
+
+<script>
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+  const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+</script>
+
+{% endblock %}

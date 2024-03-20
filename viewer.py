@@ -778,6 +778,233 @@ Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Ad
   data["hier"]="========================="
   return render_template('recommend_fail.html',data=data)
 
+
+@app.route('/recommend_modern', methods=['GET', 'POST'])
+def recommend_modern():
+  c = get_db().cursor()
+  data = {}
+  state = 0
+
+ 
+  try:
+    award_types = do_query(c, "SELECT id, category FROM award_categories")
+    data['award_types']=award_types
+    branches = do_query(c, 'SELECT DISTINCT id, name FROM groups WHERE accept_recommendations = 1')
+    data['branches'] = branches
+    if request.method == 'POST':
+        state = request.form.get('state', default=0, type=int)
+
+        if state == 0 or state == 6:
+            # first page of the form. Check if the person recommended already exists in the database
+            if (stripped(request.form, 'mod_first') is None) or (stripped(request.form, 'mod_last') is None):
+                flash('You must specify both first and last names.', 'info')
+            else:
+                forename = normalize(stripped(request.form, 'mod_first'))
+                surname = normalize(stripped(request.form, 'mod_last'))
+                origin = normalize(stripped(request.form, 'origin'))
+                c = get_db().cursor()
+                data['origin'] = origin
+                rst=db_search_modern(c,surname, forename)
+                data['matches']=rst
+                data['surname']=surname
+                data['forename']=forename
+                if origin=="person":
+                    print("do nothing")
+                    data['direct']=True
+
+                #rst=search_modern(c,surname, forename)
+                #data['matches'] = rst
+                data['award_types'] = award_types
+                data['branches'] = branches
+                #print(data)
+                state = 1
+        elif state == 1:
+           #2nd page of the form: confirm the person in the db (or ask for name). Get type or recommendation and crown         
+            c = get_db().cursor()
+            data['person_id'] = person_id = request.form.get('person', type=int)
+            data['award_types'] = request.form.getlist('type')
+            data['branch'] = request.form.getlist('branch')            
+            if '2' in data['branch']:
+                    addSCA = data['branch']
+                    addSCA.append('1')  #add SCA level awards if Drachenwald is selected
+                    data['branch'] = addSCA
+                    
+            if person_id is None:
+                data['person'] = stripped(request.form, 'unknown')
+                data['awards'] = []
+                data['unawards']={}
+                persona_id = -1
+            
+            else:
+                data['person'] = do_query_value(c, 'SELECT surname, forename FROM people WHERE id =  %s', person_id)
+                data['awards'] = do_query(c, 'SELECT award_types.name, awards.date, award_types.precedence FROM personae p JOIN awards ON p.id = awards.persona_id JOIN award_types ON awards.type_id = award_types.id WHERE p.person_id = %s ORDER BY awards.date, award_types.name' % person_id) 
+                data['awards_query'] = 'SELECT award_types.name, awards.date, award_types.precedence FROM personae p JOIN awards ON p.id = awards.persona_id JOIN award_types ON awards.type_id = award_types.id WHERE p.person_id = %s ORDER BY awards.date, award_types.name' % person_id
+            unawards_query = '''SELECT award_types.id, award_types.name, CASE award_types.group_id WHEN 1 THEN 2 ELSE award_types.group_id END AS group_id, award_types.precedence, tooltip
+                                FROM award_types 
+                                    LEFT JOIN (SELECT award_types.id 
+                                               FROM personae AS p1 
+                                                    JOIN personae AS p2 ON p1.person_id = p2.person_id 
+                                                    JOIN awards ON p2.id = awards.persona_id 
+                                                    JOIN award_types ON awards.type_id = award_types.id WHERE p1.id = %s) AS a ON award_types.id = a.id 
+                                WHERE (award_types.group_id IN (%s) 
+                                      AND (award_types.open = 1 OR award_types.open IS NULL) 
+                                      AND recommendable = 1
+                                      AND award_types.category_id in ("%s") OR (award_types.id = 1))
+                                      AND (a.id IS NULL OR repeatable = 1) -- don't recommend awards that the person already have unless they can be handed out multiple times
+                        		ORDER BY group_id, award_types.precedence, award_types.name''' % (person_id, ','.join(data['branch']), '","'.join(data['award_types']))
+
+            data['unawards'] = do_query(c, unawards_query)
+            data['unawards'] = { g: list(gi) for g, gi in
+                    itertools.groupby(data['unawards'], lambda x: x[2])
+                }
+            
+            data['in_op'] = person_id == -1
+
+            # removes the awards of similar level if already received
+            #if 2 in data['unawards']:
+            #    # omit AoA if they have any AoA-level awards
+            #    # omit GoA if they have any GoA-level awards
+            #    has_aoa = any(a[2] == 300 for a in data['awards'])
+            #    has_goa = any(a[2] == 500 for a in data['awards'])
+            #    data['unawards'][2] = [u for u in data['unawards'][2] if (not has_aoa or u[0] != 1) and (not has_goa or u[0] != 11)]
+
+            crowns = dict(do_query(c, 'SELECT id, name FROM groups WHERE id != 1 AND id IN (%s)' % ','.join(data['branch'])))
+            data['sendto']=crowns
+
+            state = 2
+ 
+        elif state == 2:
+            #process form details 
+            your_forename = stripped(request.form, 'your_forename')
+            your_surname = stripped(request.form, 'your_surname')
+            your_persona = stripped(request.form, 'your_persona')
+            your_email = stripped(request.form, 'your_email')
+
+            person = stripped(request.form, 'person')
+            person_id = request.form.get('person_id', type=int)
+
+            time_served = stripped(request.form, 'time_served')
+            gender = stripped(request.form, 'gender')
+            branch = stripped(request.form, 'branch')
+
+            awards = request.form.getlist('awards[]', type=int)
+            crowns = request.form.getlist('crowns[]', type=int)
+            recommendation = stripped(request.form, 'recommendation')
+
+            events = stripped(request.form, 'events')
+
+            scribe = stripped(request.form, 'scribe')
+            scribe_email = stripped(request.form, 'scribe_email')
+
+            c = get_db().cursor()
+            crown_names = [n[0] for n in do_query(c, 'SELECT name FROM groups WHERE id IN ({})'.format(','.join(['%s'] * len(crowns))), *crowns)]
+
+            award_names = "No awards selected"  
+            if (len(awards) > 0):
+                award_names_rst = [n[0] for n in do_query(c, 'SELECT name FROM award_types WHERE id IN ({})'.format(','.join(['%s'] * len(awards))), *awards)]
+                award_names= ', '.join(award_names_rst)
+
+            data = {
+                'your_forename': your_forename,
+                'your_surname': your_surname,
+                'your_persona': your_persona,
+                'your_email': your_email,
+                'person': person,
+                'person_id': person_id,
+                'time_served': time_served,
+                'gender': gender,
+                'branch': branch,
+                'awards': awards,
+                'award_names': award_names,
+                'crowns': crowns,
+                'crown_names': crown_names,
+                'recommendation': recommendation,
+                'events': events,
+                'scribe': scribe,
+                'scribe_email': scribe_email,
+                'awards_form':awards
+            }
+
+            your_email = stripped(request.form, 'your_email')
+
+            rec = stripped(request.form, 'recommendation')
+
+            body_vars = {
+                'your_forename': stripped(request.form, 'your_forename'),
+                'your_surname': stripped(request.form, 'your_surname'),
+                'your_persona': stripped(request.form, 'your_persona'),
+                'your_email': your_email,
+                'person': stripped(request.form, 'person'),
+                'time_served': stripped(request.form, 'time_served'),
+                'gender': stripped(request.form, 'gender'),
+                'branch': stripped(request.form, 'branch'),
+                'award_names': award_names,
+                'recommendation': rec,
+                'events': stripped(request.form, 'events'),
+                'scribe': stripped(request.form, 'scribe') or '',
+                'scribe_email': stripped(request.form, 'scribe_email') or '',
+                'date': datetime.date.today()
+            }
+            #this still needs to be written!
+            body = create_rec_email(**body_vars)
+            crowns = request.form.getlist('crowns[]', type=int)
+
+            crown_emails = {
+                 2: [
+                        'king@drachenwald.sca.org',
+                        'queen@drachenwald.sca.org',
+                        'crownprince@drachenwald.sca.org',
+                        'crownprincess@drachenwald.sca.org'
+                    ],
+                27: ['prince@insulaedraconis.org', 'princess@insulaedraconis.org'],
+                 3: ['furste@nordmark.org', 'furstinna@nordmark.org'],
+                 4: ['paroni@aarnimetsa.org', 'paronitar@aarnimetsa.org'],
+                30: ['baron@gotvik.se', 'baroness@gotvik.se'],
+                 5: ['baron@knightscrossing.org', 'baronin@knightscrossing.org'],
+                25: ['baron@styringheim.se', 'baronessa@styringheim.se'],
+                42: ['baron.eplaheimr@gmail.com', 'baroness.eplaheimr@gmail.com']
+            }
+
+            to = [a for c in crowns for a in crown_emails[c]]
+
+            #scopes = ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.compose']
+            #cred_info = app.config['GOOGLE_CRED']
+            
+            #credentials = service_account.Credentials.from_service_account_info(info=cred_info, scopes=scopes)
+            #service = build('gmail', 'v1', credentials=credentials.with_subject('recommendations@drachenwald.sca.org'))
+            #message = EmailMessage()
+            #message.set_content(body)
+            #message['To'] = to
+            #message['To'] = [your_email]
+            #message['Cc'] = [your_email]
+            #message['From']= cred_info["client_email"]
+            #message['Subject'] = 'Recommendation'
+            
+            #encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+            #create_message = {
+            #            'raw': encoded_message
+            #    }
+            # pylint: disable=E1101
+            
+            #send_message = (service.users().messages().send
+            #                    (userId="me", body=create_message).execute())
+            data["body"] = body
+            state = 4
+
+    return render_template(
+        'recommend_modern_{}.html'.format(state),
+        data=data
+    )
+  except Exception as e:
+      data["error"]=e.traceback.format_exc()
+      return render_template('recommend_fail.html',data=data)
+  data["hier"]="========================="
+  return render_template('recommend_fail.html',data=data)
+
+
+
+
+
 #
 # JSON API
 #

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Award Recommendation{% endblock %}
+{% block content %}
+<div id="content">
+  <div class="col-12 col-md-10 col-lg-8 mx-auto">
+
+    <form method="post">
+      <input type="hidden" name="state" value="0"/>
+
+      <label for="mod_forename" class="form-label"><strong>Recommend someone for an award</strong></label>
+
+      <div class="input-group mb-5 shadow">
+        <input id="mod_first" name="mod_first" type="text" class="form-control" placeholder="Enter their modern first name" required>
+        <input id="mod_last" name="mod_last" type="text" class="form-control" placeholder="Enter their modern last name" required>
+        <input id="origin" name="origin" type="hidden" value="recommend">
+        <button class="btn btn-primary px-5" id="submit" type="submit" value="Search">Search</button>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+{% endblock %}
