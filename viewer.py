@@ -685,45 +685,7 @@ def recommend():
                 'date': datetime.date.today()
             }
 
-            body_fmt = '''
-{your_forename} {your_surname}
-{your_persona}
-{your_email}
-
-Recommendation of {persona}
-'''
-
-            if body_vars['time_served']:
-                body_fmt += '\nTime in the Society: {time_served}'
-
-            if body_vars['gender']:
-                body_fmt += '\nGender: {gender}'
-
-            if body_vars['branch']:
-                body_fmt += '\nBranch: {branch}'
-
-            body_fmt += '''
-For the following awards: {award_names}
-
-{recommendation}
-'''
-            if body_vars['events']:
-                body_fmt += '\nEvents: {events}'
-
-            if body_vars['scribe'] or body_vars['scribe_email']:
-                body_fmt += '\nSuggested scribe: {scribe} {scribe_email}'
-
-            body_fmt += '''
-
-========== Pasteable summary ==========
-Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Address | SCA Name | Time in the SCA | Gender | Local Group | Awards | Events Person Will Attend | Suggested Scribe Name | Suggested Scribe Email Address | Reason for Recommendation
-{date}|{your_forename} {your_surname}|{your_persona}|{your_email}|{persona}|{time_served}|{gender}|{branch}|{award_names}|{events}|{scribe}|{scribe_email}|{recommendation_sanitized}
-'''
-
-            body = body_fmt.format(**body_vars)
-
-            body = '\n'.join(itertools.chain.from_iterable(textwrap.wrap(para, width=72) or [''] for para in body.split('\n'))).strip()
-
+            body = create_rec_email(**body_vars)
             crowns = request.form.getlist('crowns[]', type=int)
 
             crown_emails = {
@@ -777,6 +739,91 @@ Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Ad
       return render_template('recommend_fail.html',data=data)
   data["hier"]="========================="
   return render_template('recommend_fail.html',data=data)
+
+
+def create_rec_email(your_forename='', your_surname='', your_email='', person='', modern_first='', modern_last='', time_served='', gender='', branch='', award_names=[], region='', events='', scribe='', scribe_email='', date='', your_persona='', your_email='', recommendation=''  ):
+   rec_sanitized = rec.translate(REC_CSV_TRANS)
+   body_fmt = '''
+{your_forename} {your_surname}
+{your_persona}
+{your_email}
+
+Recommendation of {person}
+'''
+
+   if body_vars['time_served']:
+                body_fmt += '\nTime in the Society: {time_served}'
+
+   if body_vars['gender']:
+       body_fmt += '\nGender: {gender}'
+
+   if body_vars['branch']:
+       body_fmt += '\nBranch: {branch}'
+
+   body_fmt += '''
+Forowing awards: {award_names}
+
+{region}
+'''
+   if body_vars['events']:
+       body_fmt += '\nEvents: {events}'
+
+   if body_vars['scribe'] or body_vars['scribe_email']:
+       body_fmt += '\nSuggested scribe: {scribe} {scribe_email}'
+
+   body_fmt += '''
+
+========== Pasteable summary ==========
+Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Address | SCA Name | Time in the SCA | Gender | Local Group | Awards | Events Person Will Attend | Suggested Scribe Name | Suggested Scribe Email Address | Reason for Recommendation
+{date}|{your_forename} {your_surname}|{your_persona}|{your_email}|{persona}|{time_served}|{gender}|{branch}|{award_names}|{events}|{scribe}|{scribe_email}|{recommendation_sanitized}
+
+<table>
+<th><td>Awardee SCA Name (no titles)</td>
+    <td><Awardee Legal Name</td><td>Awardee Branch</td>
+    <td>Region</td>
+    <td>Award/Order</td>
+    <td>One Rec. for Multiple Awards?</td>
+    <td>Date of Rec.</td>
+    <td>Sender Real Name</td>
+    <td>Sender SCA Name</td>
+    <td>Sender Email</td>
+    <td>Status</td>
+    <td>Years in SCA</td>
+    <td>Recommendation</td>
+    <td>Royalty Notes</td>
+    <td>Awardee OP Link</td>
+    <td>Up-coming Events</td>
+    <td>Gender</td>
+    <td>Suggested Scribe</td>
+</th>
+<tr><td>{persona}</td>
+    <td><Awardee Legal Name</td>
+    <td>{branch}</td>
+    <td></td>
+    <td>{award_names}</td>
+    <td>{multiple_awards}</td>
+    <td>{date}</td>
+    <td>{your_forename} {your_surname}</td>
+    <td>your_persona</td>
+    <td>{your_email}</td>
+    <td></td>
+    <td>{time_served}</td>
+    <td>{recommendation_sanitized}</td>
+    <td></td>
+    <td>Awardee OP Link</td>
+    <td>{events}</td>
+    <td>{gender}</td>
+    <td>{scribe}</td>
+</tr>
+</table>
+'''
+
+   body = body_fmt.format(locals())
+
+   body = '\n'.join(itertools.chain.from_iterable(textwrap.wrap(para, width=72) or [''] for para in body.split('\n'))).strip()
+
+   return body
+
 
 #
 # JSON API
