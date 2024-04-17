@@ -30,7 +30,7 @@ import config
 def default_config():
     return dict(
         SECRET_KEY=os.urandom(128),
-        DEBUG=True
+        DEBUG=False
     )
 
 
