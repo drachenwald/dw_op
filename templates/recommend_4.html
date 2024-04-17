@@ -3,7 +3,8 @@
 {% block content %}
   <div id="content">
     <div class="text-center w-100">
-      <p><strong>Your recommendation has been sent.</strong></p>
+      <p><strong>Your have sent the following recommendation: </strong></p>
+      <pre> {{ data.body }} </pre>
       <div class="text-center w-100">
         <div class="col-12 col-md-10 col-lg-8 mx-auto">
           <a class="btn btn-primary shadow" href="{{ url_for('front') }}">Go to home page</a>
