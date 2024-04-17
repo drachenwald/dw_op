@@ -763,8 +763,8 @@ Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Ad
                 }
             # pylint: disable=E1101
             
-            #send_message = (service.users().messages().send
-            #                    (userId="me", body=create_message).execute())
+            send_message = (service.users().messages().send
+                                (userId="me", body=create_message).execute())
             data["body"] = body
             state = 4
 
