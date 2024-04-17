@@ -3,3 +3,4 @@
 /static/images/arms
 op.sqlite
 .vscode/
+.sql-init/*

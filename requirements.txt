@@ -1,6 +1,6 @@
 flask
-protobuf==3.17.3
+protobuf <=4.21.12, >=4.21.1
 google-api-python-client==1.12.11
-https://cdn.mysql.com/Downloads/Connector-Python/mysql-connector-python-2.0.4.tar.gz
-google-auth-httplib2 
-google-auth-oauthlib 
+mysql-connector-python~=8.2.0
+google-auth-httplib2
+google-auth-oauthlib

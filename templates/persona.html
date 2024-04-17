@@ -10,21 +10,32 @@
       <div class="col-12 col-sm-8 col-md-10 text-center text-sm-start">
 
         <p>
-          <b>{{ name }}</b>, whose modern name is {% if not has_modname %}not{% endif %}
-          on file.
-        </p>
+          <b>{{ title }} {{ name }}</b>{% if pronouns != "" %} ({{ pronouns }}){% endif %}
+</p>
+<p> 
+	<ul>
+	{% if region %}
+        <li>
+		  Region: <b> {{ region }} </b>
+        </li>
+	{% endif %}
 
-        {% if other %}
-        <p>
-          Also known as {{ ', '.join(other) }}
-        </p>
-        {% endif %}
 
-        {% if region %}
-          <p>Most recently of <b>{{ region }}</b>.</p>
-        {% endif %}
-
-        {% if highest %}
+	<li> Modern name: {% if show_mod %} {{ mod_name }} {% else %}  <b>is {% if not has_modname %}not{% else %} {% endif %} on file</b>{% endif %}
+	</ul>
+	<ul>
+	{% if alt_titles|length > 0 %}
+	<li>Alternative title(s): {{ ', '.join(alt_titles) }} 
+	</li>
+	{% endif %} 
+	<br\>
+	
+	{% if other | length > 0 %}
+	<li>Also known as: {{ ', '.join(other) }} 
+	</li>
+	{% endif %} 
+</p>
+                {% if highest %}
           <p>
             Highest award received is
             <b>{{ highest[0][1] }}</b>
@@ -35,9 +46,11 @@
         <form method="post" action="https://op.drachenwald.sca.org/recommend">
           <input type="hidden" name="state" value="1"/>
           <input name="persona" type="hidden" value="{{persona_id}}"/></td>
-          <button class="btn btn-primary my-2 me-2 shadow" id="submit" type="submit" value="Select">Recommend this person for an award</button>
+          <button class="btn btn-primary my-2 me-2 shadow" id="submit" type="submit" value="Select">Recommend for an award</button>
           <a href="https://docs.google.com/forms/d/e/1FAIpQLSdtLQV7XY9ehFnc5T65Q5vPCFZMCB8hUc458JTw34rPRjdipw/viewform?usp=pp_url&entry.2122792637={{name}}&entry.1114613229=http://op.drachenwald.sca.org{{request.path}}"
-            class="btn btn-primary my-2 shadow">Send in a correction for {{name}}</a>
+            class="btn btn-primary my-2 shadow">Send in a correction</a>
+	  <a  class="btn btn-primary my-2 shadow href="https://docs.google.com/forms/d/e/1FAIpQLSfA9T0PWTzfRDju-Ewm7TU0_-PL7qnsWTtO6Dv8OikG7cg8Ww/viewform?entry.2004114986={{name}}&entry.200099466=http//op.drachenwald.sca.org/persona/{{name}}">Send modern name, pronouns & title</a>
+
         </form>
 
       </div>
