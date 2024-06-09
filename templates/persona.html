@@ -43,15 +43,15 @@
           </p>
         {% endif %}
 
-        <form method="post" action="recommend">
-          <input type="hidden" name="state" value="1"/>
-          <input name="persona" type="hidden" value="{{persona_id}}"/></td>
-          <button class="btn btn-primary my-2 me-2 shadow" id="submit" type="submit" value="Select">Recommend for an award</button>
-          <a href="https://docs.google.com/forms/d/e/1FAIpQLSdtLQV7XY9ehFnc5T65Q5vPCFZMCB8hUc458JTw34rPRjdipw/viewform?usp=pp_url&entry.2122792637={{name}}&entry.1114613229=http://op.drachenwald.sca.org{{request.path}}"
-            class="btn btn-primary my-2 shadow">Send in a correction</a>
-	  <a  class="btn btn-primary my-2 shadow" href="https://docs.google.com/forms/d/e/1FAIpQLSfA9T0PWTzfRDju-Ewm7TU0_-PL7qnsWTtO6Dv8OikG7cg8Ww/viewform?entry.2004114986={{name}}&entry.200099466=http//op.drachenwald.sca.org/persona/{{name}}">Send modern name, pronouns & title</a>
-
-        </form>
+        <form method="post" action="https://op.drachenwald.sca.org/recommend">
+		<input type="hidden" name="state" value="0"/> 
+        <input id="origin" name="origin" type="hidden" value="persona">
+			            <input name="persona" type="hidden" value="{{persona_id}}"/></td>
+			              <button class="btn btn-primary my-2 me-2 shadow" id="submit" type="submit" value="Select">Recommend this person for an award</button>
+				                <a href="https://docs.google.com/forms/d/e/1FAIpQLSdtLQV7XY9ehFnc5T65Q5vPCFZMCB8hUc458JTw34rPRjdipw/viewform?usp=pp_url&entry.2122792637={{name}}&entry.1114613229=http://op.drachenwald.sca.org{{request.path}}"
+							            class="btn btn-primary my-2 shadow">Send in a correction for {{name}}</a>
+						<a class="btn btn-primary my-2 shadow" href="https://docs.google.com/forms/d/e/1FAIpQLSfA9T0PWTzfRDju-Ewm7TU0_-PL7qnsWTtO6Dv8OikG7cg8Ww/viewform?entry.2004114986={{name}}&entry.200099466=http//op.drachenwald.sca.org/persona/{{name}}">Send modern name, pronouns & title</a>					        </form>
+	
 
       </div>
 

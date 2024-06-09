@@ -537,7 +537,8 @@ def recommend():
     data['branches'] = branches
     if request.method == 'POST':
         state = request.form.get('state', default=0, type=int)
-
+        data["form"]=request.form
+        data["formstate"] = state
         if state == 0 or state == 6:
             # first page of the form. Check if the person recommended already exists in the database
             if stripped(request.form, 'persona') is None:
@@ -572,8 +573,11 @@ def recommend():
                 data['awards'] = []
                 data['unawards']={}
                 persona_id = -1
-            
+                data['persona_id']=persona_id
+                data['route']="route1"
             else:
+                data['persona_id']=persona_id
+                data['route']="route2"
                 data['persona'] = do_query_value(c, 'SELECT name FROM personae WHERE id =  %s', persona_id)
                 data['awards'] = do_query(c, 'SELECT award_types.name, awards.date, award_types.precedence FROM personae AS p1 JOIN personae AS p2 ON p1.person_id = p2.person_id JOIN awards ON p2.id = awards.persona_id JOIN award_types ON awards.type_id = award_types.id  WHERE p1.id = %s ORDER BY awards.date, award_types.name', persona_id)
             unawards_query = '''SELECT award_types.id, award_types.name, CASE award_types.group_id WHEN 1 THEN 2 ELSE award_types.group_id END AS group_id, award_types.precedence, tooltip
@@ -589,7 +593,7 @@ def recommend():
                                       AND award_types.category_id in ("%s") OR (award_types.id = 1))
                                       AND (a.id IS NULL OR repeatable = 1) -- don't recommend awards that the person already have unless they can be handed out multiple times
                         		ORDER BY group_id, award_types.precedence, award_types.name''' % (persona_id, ','.join(data['branch']), '","'.join(data['award_types']))
-
+            data['unawards_query']=unawards_query
             data['unawards'] = do_query(c, unawards_query)
             data['unawards'] = { g: list(gi) for g, gi in
                     itertools.groupby(data['unawards'], lambda x: x[2])
@@ -772,8 +776,12 @@ Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Ad
         'recommend_{}.html'.format(state),
         data=data
     )
+  except mysql.connector.errors.ProgrammingError as e:
+      data["error"]=e
+      return render_template('recommend_fail.html',data=data)
+
   except Exception as e:
-      data["error"]=e.traceback.format_exc()
+      data["error"]=e
       return render_template('recommend_fail.html',data=data)
   data["hier"]="========================="
   return render_template('recommend_fail.html',data=data)
