@@ -154,3 +154,7 @@ You can turn off this feature to get a quicker startup with -A
 Database changed
 MariaDB [drachdb]>
 ```
+
+# Production information
+the OP uses a google service account to send email & add recommendations to a spreadsheet. The details for this account can be found under the workspace admin accounts on https://console.cloud.google.com/
+https://apps.google.com/supportwidget/articlehome?hl=en&article_url=https%3A%2F%2Fsupport.google.com%2Fa%2Fanswer%2F7378726%3Fhl%3Den&assistant_id=generic-unu&product_context=7378726&product_name=UnuFlow&trigger_context=a
