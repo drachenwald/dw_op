@@ -690,7 +690,7 @@ def recommend():
                 'date': datetime.date.today(),
                 'added_to_sheet':0
             }
-
+            data["process"] = "step 1"
             crowns = request.form.getlist('crowns[]', type=int)
 
             crown_emails = {
@@ -710,11 +710,20 @@ def recommend():
             }
             crown_sheets = {
                  2: ['1ZfVdlJqwW-WEg4UKrqWHoY5Bb8U0J0vppPEzFkt2s1g'],
+                27: [], #Insulae Draconis
+                 3: [], #Nordmark
+                 4: [], #Aarnimetsa
+                30: [], #Gotvik
+                 5: [], #Knights Crossing
+                25: [], #Styringheim
+                42: []  #Eplaheimr
             }
 
+            data["process"] = "step 2"
             to = [a for c in crowns for a in crown_emails[c]]
             sheets = [a for c in crowns for a in crown_sheets[c]]
             
+            data["process"] = "step 3"
             data['to']=to
             data['sheets']=sheets
             #write to sheet
@@ -725,7 +734,9 @@ def recommend():
             credentials = service_account.Credentials.from_service_account_info(info=cred_info, scopes=scopes)
             service = build('sheets', 'v4', credentials=credentials)
         
+            data["process"] = "step 4"
             for sheet_id in sheets:
+                data["process"] = "step 5"
                 tab_id="staging"
                 sheet = service.spreadsheets()
     
@@ -776,8 +787,10 @@ def recommend():
                 data['response']=response
                 body_vars["added_to_sheet"]=response['updates']['updatedRows']
                 
+                data["process"] = "step 6"
            
             #send email
+            data["process"] = "step 7"
             body_fmt=""
             if body_vars['added_to_sheet']>0:
                 body_fmt += "The recommendation below has been added to the Drachenwald recommendation tracker.\n"
