@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Recommender form error{% endblock %}
+{% block content %}
+<h1>Something went wrong with the recommendations form</h1>
+<p><b>
+
+Your recommendation has not been sent! Please let the web team know about this error: support@drachenwald.sca.org. Please include the full content of this page. It helps us debug.
+</b>
+</p>
+
+<p>
+{{ data }} <br/>
+</p>
+<p>{{ ex }} <br/>
+</p>
+{% if config.DEBUG %}
+
+
+{{ ex }} 
+{% endif %}
+
+<p>Please report the problem to <a href="mailto:webminister@drachenwald.sca.org">webminister@drachenwald.sca.org</a>, with a description of what you were doing.</p>
+{% endblock %}
