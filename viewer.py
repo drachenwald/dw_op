@@ -640,7 +640,8 @@ def recommend():
             c = get_db().cursor()
             crown_names = [n[0] for n in do_query(c, 'SELECT name FROM groups WHERE id IN ({})'.format(','.join(['%s'] * len(crowns))), *crowns)]
 
-            award_names = "No awards selected"  
+            award_names = "No awards selected"
+            award_names_rst = ["no awards selected"]
             if (len(awards) > 0):
                 award_names_rst = [n[0] for n in do_query(c, 'SELECT name FROM award_types WHERE id IN ({})'.format(','.join(['%s'] * len(awards))), *awards)]
                 award_names= ', '.join(award_names_rst)
@@ -686,10 +687,102 @@ def recommend():
                 'events': stripped(request.form, 'events'),
                 'scribe': stripped(request.form, 'scribe') or '',
                 'scribe_email': stripped(request.form, 'scribe_email') or '',
-                'date': datetime.date.today()
+                'date': datetime.date.today(),
+                'added_to_sheet':0
             }
 
-            body_fmt = '''
+            crowns = request.form.getlist('crowns[]', type=int)
+
+            crown_emails = {
+                 2: [
+                        'king@drachenwald.sca.org',
+                        'queen@drachenwald.sca.org',
+                        'crownprince@drachenwald.sca.org',
+                        'crownprincess@drachenwald.sca.org'
+                    ],
+                27: ['prince@insulaedraconis.org', 'princess@insulaedraconis.org'],
+                 3: ['furste@nordmark.org', 'furstinna@nordmark.org'],
+                 4: ['paroni@aarnimetsa.org', 'paronitar@aarnimetsa.org'],
+                30: ['baron@gotvik.se', 'baroness@gotvik.se'],
+                 5: ['baron@knightscrossing.org', 'baronin@knightscrossing.org'],
+                25: ['baron@styringheim.se', 'baronessa@styringheim.se'],
+                42: ['baron.eplaheimr@gmail.com', 'baroness.eplaheimr@gmail.com']
+            }
+            crown_sheets = {
+                 2: ['1ZfVdlJqwW-WEg4UKrqWHoY5Bb8U0J0vppPEzFkt2s1g'],
+            }
+
+            to = [a for c in crowns for a in crown_emails[c]]
+            sheets = [a for c in crowns for a in crown_sheets[c]]
+            
+            data['to']=to
+            data['sheets']=sheets
+            #write to sheet
+            scopes = ['https://www.googleapis.com/auth/cloud-platform', 'https://www.googleapis.com/auth/spreadsheets']
+
+            cred_info = app.config['GOOGLE_CRED']
+            
+            credentials = service_account.Credentials.from_service_account_info(info=cred_info, scopes=scopes)
+            service = build('sheets', 'v4', credentials=credentials)
+        
+            for sheet_id in sheets:
+                tab_id="staging"
+                sheet = service.spreadsheets()
+    
+                result = sheet.values().get(spreadsheetId=sheet_id,
+                                          range=tab_id).execute()
+                values = result.get('values', [])
+                
+                data['values']=values 
+                rec_data=[]
+                
+                for r in award_names_rst: 
+                    rec_data.append([body_vars['persona'],
+                            'N/A', #real name not available',
+                             body_vars['branch'],
+                             'N/A',  #region
+                             r,
+                             len(award_names_rst)>1, #multiple or single rec
+                             body_vars['date'].strftime("%Y %b/%d"),
+                             body_vars['your_forename']+' '+body_vars['your_surname'],
+                             body_vars['your_persona'],
+                             body_vars['your_email'],
+                             'N/A', #status
+                             body_vars['time_served'],
+                             body_vars['recommendation_sanitized'],
+                             'N/A', #Royalty Notes
+                             'N/A', #Awardee OP link
+                             body_vars['events'],
+                             body_vars['gender'],
+                             body_vars['scribe']
+                           ])
+                range_db = tab_id
+                value_input_option = "RAW"
+                insert_data_option = "INSERT_ROWS"
+    
+                # This is the 'value_range_body' or JSON
+                value_range_body = {
+                            "majorDimension": "ROWS",
+                            "values": rec_data,
+                            }
+    
+                req = sheet.values().append(spreadsheetId=sheet_id, 
+                                                             range=range_db, 
+                                                             valueInputOption=value_input_option, 
+                                                             insertDataOption=insert_data_option, 
+                                                             body=value_range_body)
+                response = req.execute()
+    
+                data['response']=response
+                body_vars["added_to_sheet"]=response['updates']['updatedRows']
+                
+           
+            #send email
+            body_fmt=""
+            if body_vars['added_to_sheet']>0:
+                body_fmt += "The recommendation below has been added to the Drachenwald recommendation tracker.\n"
+
+            body_fmt += '''
 {your_forename} {your_surname}
 {your_persona}
 {your_email}
@@ -728,85 +821,6 @@ Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Ad
 
             body = '\n'.join(itertools.chain.from_iterable(textwrap.wrap(para, width=72) or [''] for para in body.split('\n'))).strip()
 
-            crowns = request.form.getlist('crowns[]', type=int)
-
-            crown_emails = {
-                 2: [
-                        'king@drachenwald.sca.org',
-                        'queen@drachenwald.sca.org',
-                        'crownprince@drachenwald.sca.org',
-                        'crownprincess@drachenwald.sca.org'
-                    ],
-                27: ['prince@insulaedraconis.org', 'princess@insulaedraconis.org'],
-                 3: ['furste@nordmark.org', 'furstinna@nordmark.org'],
-                 4: ['paroni@aarnimetsa.org', 'paronitar@aarnimetsa.org'],
-                30: ['baron@gotvik.se', 'baroness@gotvik.se'],
-                 5: ['baron@knightscrossing.org', 'baronin@knightscrossing.org'],
-                25: ['baron@styringheim.se', 'baronessa@styringheim.se'],
-                42: ['baron.eplaheimr@gmail.com', 'baroness.eplaheimr@gmail.com']
-            }
-
-            to = [a for c in crowns for a in crown_emails[c]]
-
-            #write to sheet
-            scopes = ['https://www.googleapis.com/auth/cloud-platform', 'https://www.googleapis.com/auth/spreadsheets']
-
-            cred_info = app.config['GOOGLE_CRED']
-            
-            credentials = service_account.Credentials.from_service_account_info(info=cred_info, scopes=scopes)
-            service = build('sheets', 'v4', credentials=credentials)
-        
-            sheet_id= '1ZfVdlJqwW-WEg4UKrqWHoY5Bb8U0J0vppPEzFkt2s1g'
-            tab_id="staging"
-            sheet = service.spreadsheets()
-
-            result = sheet.values().get(spreadsheetId=sheet_id,
-                                      range=tab_id).execute()
-            values = result.get('values', [])
-            
-            data['values']=values 
-            '''body_vars = {
-                'your_forename': stripped(request.form, 'your_forename'),
-                'your_surname': stripped(request.form, 'your_surname'),
-                'your_persona': stripped(request.form, 'your_persona'),
-                'your_email': your_email,
-                'persona': stripped(request.form, 'persona'),
-                'time_served': stripped(request.form, 'time_served'),
-                'gender': stripped(request.form, 'gender'),
-                'branch': stripped(request.form, 'branch'),
-                'award_names': award_names,
-                'recommendation': rec,
-                'recommendation_sanitized': rec_sanitized,
-                'events': stripped(request.form, 'events'),
-                'scribe': stripped(request.form, 'scribe') or '',
-                'scribe_email': stripped(request.form, 'scribe_email') or '',
-                'date': datetime.date.today()
-            '''
-            rec_data = [[body_vars['your_forename'],
-                         body_vars['your_surname'],
-                         body_vars['your_persona']
-                       ]]
-            range_db = tab_id
-            value_input_option = "RAW"
-            insert_data_option = "INSERT_ROWS"
-
-            # This is the 'value_range_body' or JSON
-            value_range_body = {
-                        "majorDimension": "ROWS",
-                        "values": rec_data,
-                        }
-
-            req = sheet.values().append(spreadsheetId=sheet_id, 
-                                                         range=range_db, 
-                                                         valueInputOption=value_input_option, 
-                                                         insertDataOption=insert_data_option, 
-                                                         body=value_range_body)
-            response = req.execute()
-
-            data['response']=response
-
-           
-            #send email
 
             scopes = ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.compose']
             cred_info = app.config['GOOGLE_CRED']
