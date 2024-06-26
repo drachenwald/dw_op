@@ -692,31 +692,8 @@ def recommend():
             }
             crowns = request.form.getlist('crowns[]', type=int)
 
-            crown_emails = {
-                 2: [
-                        'king@drachenwald.sca.org',
-                        'queen@drachenwald.sca.org',
-                        'crownprince@drachenwald.sca.org',
-                        'crownprincess@drachenwald.sca.org'
-                    ],
-                27: ['prince@insulaedraconis.org', 'princess@insulaedraconis.org'],
-                 3: ['furste@nordmark.org', 'furstinna@nordmark.org'],
-                 4: ['paroni@aarnimetsa.org', 'paronitar@aarnimetsa.org'],
-                30: ['baron@gotvik.se', 'baroness@gotvik.se'],
-                 5: ['baron@knightscrossing.org', 'baronin@knightscrossing.org'],
-                25: ['baron@styringheim.se', 'baronessa@styringheim.se'],
-                42: ['baron.eplaheimr@gmail.com', 'baroness.eplaheimr@gmail.com']
-            }
-            crown_sheets = {
-                 2: ['1ZfVdlJqwW-WEg4UKrqWHoY5Bb8U0J0vppPEzFkt2s1g'],
-                27: [], #Insulae Draconis
-                 3: [], #Nordmark
-                 4: [], #Aarnimetsa
-                30: [], #Gotvik
-                 5: [], #Knights Crossing
-                25: [], #Styringheim
-                42: []  #Eplaheimr
-            }
+            crown_emails = app.config['CROWN_EMAILS']
+            crown_sheets = app.config['CROWN_SHEETS']
 
             to = [a for c in crowns for a in crown_emails[c]]
             sheets = [a for c in crowns for a in crown_sheets[c]]
@@ -744,20 +721,20 @@ def recommend():
                 
                 for r in award_names_rst: 
                     rec_data.append([body_vars['persona'],
-                            'N/A', #real name not available',
+                            '', #real name not available',
                              body_vars['branch'],
-                             'N/A',  #region
+                             '',  #region
                              r,
                              len(award_names_rst)>1, #multiple or single rec
-                             body_vars['date'].strftime("%Y %b/%d"),
+                             body_vars['date'].strftime("%Y-%m-%d"),
                              body_vars['your_forename']+' '+body_vars['your_surname'],
                              body_vars['your_persona'],
                              body_vars['your_email'],
-                             'N/A', #status
+                             '', #status
                              body_vars['time_served'],
                              body_vars['recommendation_sanitized'],
-                             'N/A', #Royalty Notes
-                             'N/A', #Awardee OP link
+                             '', #Royalty Notes
+                             '', #Awardee OP link
                              body_vars['events'],
                              body_vars['gender'],
                              body_vars['scribe']
