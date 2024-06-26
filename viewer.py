@@ -737,7 +737,7 @@ def recommend():
                              '', #Awardee OP link
                              body_vars['events'],
                              body_vars['gender'],
-                             body_vars['scribe']
+                             body_vars['scribe']+ ' ' + body_vars['scribe_email']
                            ])
                 range_db = tab_id
                 value_input_option = "RAW"
@@ -812,8 +812,8 @@ Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Ad
             service = build('gmail', 'v1', credentials=credentials.with_subject('recommendations@drachenwald.sca.org'))
             message = EmailMessage()
             message.set_content(body)
-            #message['To'] = to
-            message['To'] = [your_email]
+            message['To'] = to
+            #message['To'] = [your_email]
             message['Cc'] = [your_email]
             message['From']= cred_info["client_email"]
             message['Subject'] = 'Recommendation'
