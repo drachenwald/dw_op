@@ -599,7 +599,7 @@ def recommend():
                     itertools.groupby(data['unawards'], lambda x: x[2])
                 }
             
-            data['in_op'] = persona_id == -1
+            data['in_op'] = persona_id != -1
 
             # removes the awards of similar level if already received
             #if 2 in data['unawards']:
