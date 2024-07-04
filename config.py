@@ -1,9 +1,9 @@
-import os.path
+import os
 
-DB_USER = 'op'
-DB_PWD = 'op'
-DB_DATABASE = 'drachdb'
-DB_HOST ='db'
+DB_USER = os.getenv('DW_OP_DB_USER', 'op')
+DB_PWD = os.getenv('DW_OP_DB_PWD', 'op')
+DB_DATABASE = os.getenv('DW_OP_DB_DATABASE', 'drachdb')
+DB_HOST = os.getenv('DW_OP_DB_HOST', 'db')
 
 DISABLE_AUTH = False
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
