@@ -627,10 +627,17 @@ def recommend():
             persona = stripped(request.form, 'persona')
             persona_id = request.form.get('persona_id', type=int)
 
+
             time_served = stripped(request.form, 'time_served')
             gender = stripped(request.form, 'gender')
             branch = stripped(request.form, 'branch')
-
+            
+            person_id = None
+            if (persona_id > 0):
+                (person_id, gender) = do_query(c, 'select person_id, pronouns from personae where id = %s', persona_id)[0]
+                person_rst = do_query(c, 'select surname, forename, r.name from people p left join regions r on p.region_id = r.id where p.id = %s', person_id)[0] 
+                surname, forename, branch = person_rst
+                
             awards = request.form.getlist('awards[]', type=int)
             crowns = request.form.getlist('crowns[]', type=int)
             recommendation = stripped(request.form, 'recommendation')
@@ -656,6 +663,7 @@ def recommend():
                 'your_email': your_email,
                 'persona': persona,
                 'persona_id': persona_id,
+                'person_id': person_id,
                 'time_served': time_served,
                 'gender': gender,
                 'branch': branch,
@@ -669,6 +677,7 @@ def recommend():
                 'scribe_email': scribe_email,
                 'awards_form':awards
             }
+            data['person_rst']=person_rst
 
             your_email = stripped(request.form, 'your_email')
 
@@ -682,8 +691,6 @@ def recommend():
                 'your_email': your_email,
                 'persona': stripped(request.form, 'persona'),
                 'time_served': stripped(request.form, 'time_served'),
-                'gender': stripped(request.form, 'gender'),
-                'branch': stripped(request.form, 'branch'),
                 'award_names': award_names,
                 'recommendation': rec,
                 'recommendation_sanitized': rec_sanitized,
@@ -691,9 +698,31 @@ def recommend():
                 'scribe': stripped(request.form, 'scribe') or '',
                 'scribe_email': stripped(request.form, 'scribe_email') or '',
                 'date': datetime.date.today(),
+                'gender': gender,
+                'branch': branch,
                 'added_to_sheet':0
             }
+           
             crowns = request.form.getlist('crowns[]', type=int)
+            process_rec(body_vars,crowns,data,award_names_rst, persona_id, person_id)
+            state = 4
+
+    return render_template(
+        'recommend_{}.html'.format(state),
+        data=data
+    )
+  except mysql.connector.errors.ProgrammingError as e:
+      data["error"]=e
+      return render_template('recommend_fail.html',data=data)
+
+  except Exception as e:
+      data["error"]=e
+      return render_template('recommend_fail.html',data=data)
+  data["hier"]="========================="
+  return render_template('recommend_fail.html',data=data)
+
+
+def process_rec(body_vars, crowns, data, award_names_rst, persona_id, person_id):
 
             crown_emails = app.config['CROWN_EMAILS']
             crown_sheets = app.config['CROWN_SHEETS']
@@ -815,9 +844,9 @@ Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Ad
             service = build('gmail', 'v1', credentials=credentials.with_subject('recommendations@drachenwald.sca.org'))
             message = EmailMessage()
             message.set_content(body)
-            message['To'] = to
-            #message['To'] = [your_email]
-            message['Cc'] = [your_email]
+            #message['To'] = to
+            message['To'] = [body_vars["your_email"]]
+            message['Cc'] = [body_vars["your_email"]]
             message['From']= cred_info["client_email"]
             message['Subject'] = 'Recommendation'
             
@@ -830,21 +859,8 @@ Date | Recommender's Real Name | Recommender's SCA Name | Recommender's Email Ad
             send_message = (service.users().messages().send
                                 (userId="me", body=create_message).execute())
             data["body"] = body
-            state = 4
+ 
 
-    return render_template(
-        'recommend_{}.html'.format(state),
-        data=data
-    )
-  except mysql.connector.errors.ProgrammingError as e:
-      data["error"]=e
-      return render_template('recommend_fail.html',data=data)
-
-  except Exception as e:
-      data["error"]=e
-      return render_template('recommend_fail.html',data=data)
-  data["hier"]="========================="
-  return render_template('recommend_fail.html',data=data)
 
 #
 # JSON API
