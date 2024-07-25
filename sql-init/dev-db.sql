@@ -2471,6 +2471,30 @@ INSERT INTO `scroll_status` (`id`, `name`) VALUES
 (4, 'Completed'),
 (5, '');
 
+
+
+--
+-- Table structure for table `titles`
+--
+
+DROP TABLE IF EXISTS `titles`;
+CREATE TABLE `titles` (
+  `id` int(11) NOT NULL,
+  `persona_id` int(11) NOT NULL COMMENT 'Persona for the title',
+  `title` varchar(64) NOT NULL,
+  `main` tinyint(1) DEFAULT NULL,
+  `display_title` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Table to hold preferred titles per persona';
+
+--
+-- Dumping data for table `titles`
+--
+
+INSERT INTO `titles` (`id`, `persona_id`, `title`, `main`, `display_title`) VALUES
+(1, 1545, 'Lord', 1, 1),
+(2, 3625, 'Magistra when speaking Italian', 1, 1);
+
+
 --
 -- Indexes for dumped tables
 --
