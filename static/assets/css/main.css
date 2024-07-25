@@ -11943,3 +11943,7 @@ blockquote cite {
 .hover-text:hover .tooltip-text {
   visibility: visible;
 }
+
+.margin-left-1-em {
+  margin-left: 1em;
+}
