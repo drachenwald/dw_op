@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{%- import "macros.html" as macros %}
+{% block title %}404 Not found{% endblock %}
+{% block content %}
+<div id="content">
+  <div id="details">
+    <div class="row">
+      <div class="col-12 col-sm-8 col-md-10 text-center text-sm-start">
+        <p>Persona with the name <b>{{ name }}</b> not found.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

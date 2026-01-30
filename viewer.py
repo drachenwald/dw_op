@@ -128,7 +128,11 @@ def persona(name):
 		LEFT JOIN titles on personae.id = titles.persona_id
 					and titles.main = True
 	WHERE personae.name = %s"""
-    person_id, has_modname, region, blazon, emblazon, pronouns, title, mod_name, show_mod = do_query(c, q, uname)[0]
+    result = do_query(c, q, uname)
+    if not result:
+        return render_template('persona_not_found.html', name=uname), 404
+
+    person_id, has_modname, region, blazon, emblazon, pronouns, title, mod_name, show_mod = result[0]
 
     official_id, official_name = do_query(c, 'SELECT id, name FROM personae WHERE person_id = %s AND official = 1', person_id)[0];
 
