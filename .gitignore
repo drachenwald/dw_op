@@ -4,3 +4,4 @@
 op.sqlite
 .vscode/
 .sql-init/*
+.idea/

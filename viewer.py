@@ -769,7 +769,7 @@ def process_rec(body_vars, crowns, data, award_names_rst, persona_id, person_id)
                              body_vars['gender'],
                              body_vars['scribe']+ ' ' + body_vars['scribe_email']
                            ])
-                range_db = tab_id
+                range_db = tab_id + "!A1"
                 value_input_option = "RAW"
                 insert_data_option = "INSERT_ROWS"
     
