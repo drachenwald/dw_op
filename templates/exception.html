@@ -2,21 +2,26 @@
 {% block title %}500 Internal Server Error{% endblock %}
 {% block content %}
 <h1>Something went wrong!</h1>
-<p><b>
-We're aware of the error and are actively debugging
-</b>
-</p>
 <p>
-data<br/>
-{{ data }}
+    <b>We're aware of the error and are actively debugging.</b>
 </p>
-<p><ex<br/>
-{{ ex }} 
-</p>
-{% if config.DEBUG %}
 
+<p>
+    Please report the problem to <a href="mailto:webminister@drachenwald.sca.org">webminister@drachenwald.sca.org</a>, with a description of what you were doing.
+</p>
+
+<h2>Data</h2>
+<pre>
+{{ data }}
+</pre>
+
+<h2>Exception</h2>
+<pre>
+{{ ex }} 
+</pre>
+
+{% if config.DEBUG %}
 
 {% endif %}
 
-<p>Please report the problem to <a href="mailto:webminister@drachenwald.sca.org">webminister@drachenwald.sca.org</a>, with a description of what you were doing.</p>
 {% endblock %}
